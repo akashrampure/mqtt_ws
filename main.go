@@ -14,7 +14,9 @@ import (
 func main() {
 	logger := log.New(os.Stdout, "[ws-server] ", log.LstdFlags|log.Llongfile)
 
-	mqttSvc := NewMqtthelperSvc(logger)
+	topics := []string{"gpsinfo"}
+
+	mqttSvc := NewMqtthelperSvc(log.New(os.Stdout, "[mqtt] ", log.LstdFlags|log.Llongfile), topics)
 	mqttSvc.Start()
 	defer mqttSvc.Stop()
 
