@@ -18,7 +18,7 @@ type MqtthelperSvc struct {
 	isStopReq *atomic.Bool
 	wsPuller  *wsmqttrtpuller.WsMqttRtPuller
 
-	deviceidtasks map[string]string
+	devices map[string]string
 
 	MqttData chan interface{}
 
@@ -32,7 +32,7 @@ func NewMqtthelperSvc(logger *log.Logger, topics []string) *MqtthelperSvc {
 		isStopReq: &atomic.Bool{},
 		wsPuller:  nil,
 
-		deviceidtasks: make(map[string]string),
+		devices: make(map[string]string),
 
 		MqttData: make(chan interface{}, 1000),
 
@@ -59,7 +59,7 @@ func (o *MqtthelperSvc) read_file(filename string) {
 			continue
 		}
 
-		o.deviceidtasks[nextline] = "1"
+		o.devices[nextline] = "1"
 
 	}
 }
@@ -84,7 +84,7 @@ func (o *MqtthelperSvc) subscribe_to_topics(deviceid string) error {
 
 func (o *MqtthelperSvc) pass_to_channel(channel chan string) {
 
-	for eachDevId := range o.deviceidtasks {
+	for eachDevId := range o.devices {
 		channel <- eachDevId
 	}
 }
@@ -92,12 +92,18 @@ func (o *MqtthelperSvc) pass_to_channel(channel chan string) {
 func (o *MqtthelperSvc) wsmsg_HandleNextMsg(nextmsg *wsmsgMsg) {
 	topicSplit := strings.Split(string(nextmsg.topic), "/")
 
+	if len(topicSplit) < 3 {
+		o.logger.Println("topic is not valid, dropping message")
+		return
+	}
+
 	deviceid := topicSplit[len(topicSplit)-1]
 	topic := topicSplit[3]
 	payload := make(map[string]interface{}, 0)
 
 	jserr := json.Unmarshal(nextmsg.payload, &payload)
 	if jserr != nil {
+		o.logger.Println("json unmarshal error, dropping message", jserr)
 		return
 	}
 
