@@ -34,7 +34,7 @@ func NewMqtthelperSvc(logger *log.Logger, topics []string) *MqtthelperSvc {
 
 		deviceidtasks: make(map[string]string),
 
-		MqttData: make(chan interface{}),
+		MqttData: make(chan interface{}, 1000),
 
 		topics: topics,
 	}
@@ -107,6 +107,10 @@ func (o *MqtthelperSvc) wsmsg_HandleNextMsg(nextmsg *wsmsgMsg) {
 		"payload":  payload,
 	}
 
-	o.MqttData <- response
+	select {
+	case o.MqttData <- response:
+	default:
+		o.logger.Println("MqttData channel full, dropping message")
+	}
 
 }
