@@ -12,6 +12,12 @@ import (
 	"github.com/fabrikiot/wsmqttrt/wsmqttrtpuller"
 )
 
+type MqttResponse struct {
+	DeviceId string                 `json:"deviceid"`
+	Topic    string                 `json:"topic"`
+	Payload  map[string]interface{} `json:"payload"`
+}
+
 type MqtthelperSvc struct {
 	logger *log.Logger
 
@@ -20,7 +26,7 @@ type MqtthelperSvc struct {
 
 	devices map[string]string
 
-	MqttData chan interface{}
+	MqttData chan MqttResponse
 
 	topics []string
 }
@@ -34,7 +40,7 @@ func NewMqtthelperSvc(logger *log.Logger, topics []string) *MqtthelperSvc {
 
 		devices: make(map[string]string),
 
-		MqttData: make(chan interface{}, 1000),
+		MqttData: make(chan MqttResponse, 1000),
 
 		topics: topics,
 	}
@@ -107,10 +113,10 @@ func (o *MqtthelperSvc) wsmsg_HandleNextMsg(nextmsg *wsmsgMsg) {
 		return
 	}
 
-	response := map[string]interface{}{
-		"deviceid": deviceid,
-		"topic":    topic,
-		"payload":  payload,
+	response := MqttResponse{
+		DeviceId: deviceid,
+		Topic:    topic,
+		Payload:  payload,
 	}
 
 	select {
